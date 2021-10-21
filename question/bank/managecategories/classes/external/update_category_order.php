@@ -44,7 +44,8 @@ class update_category_order extends external_api {
      */
     public static function execute_parameters() {
         return new external_function_parameters([
-            'neworder' => new external_value(PARAM_RAW, 'JSON String - category order'),
+            'neworder' => new external_value(PARAM_RAW, 'Category order string, encoded as a json array, ie:
+            [["9,19"],["2,17","8,19"],["6,3","4,3"],["10,1"]]'),
             'origincategory' => new external_value(PARAM_INT, 'Category being moved'),
             'destinationcontext' => new external_value(PARAM_INT, 'Destination where the moved category is being put'),
             'origincontext' => new external_value(PARAM_INT, 'Context from where the category was moved')
@@ -94,7 +95,7 @@ class update_category_order extends external_api {
                 if (isset($categorytoupdate->idnumber)) {
                     // We don't want errors when reordering in same context.
                     if ($destinationcontext->contextid !== $categorytoupdate->contextid) {
-                        $exists = helper::idnumber_exists($categorytoupdate->idnumber, $destinationcontext->contextid);
+                        $exists = helper::get_idnumber($categorytoupdate->idnumber, $destinationcontext->contextid);
                         if ($exists) {
                             notification::error(get_string('idnumberexists', 'qbank_managecategories'));
                             return false;

@@ -25,7 +25,7 @@
 
 $string['addcategory'] = 'Add category';
 $string['editcategory'] = 'Edit category';
-$string['idnumberexists'] = 'ID number already in use, please change it to move category';
+$string['idnumberexists'] = 'ID number already in use, please change it to move or update category';
 $string['movequestions'] = 'Move questions to category';
 $string['pluginname'] = 'Manage categories';
 $string['privacy:metadata'] = 'The Manage Categories question bank plugin does not store any personal data.';

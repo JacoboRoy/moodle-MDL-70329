@@ -16,7 +16,7 @@
 /**
  * Javascript module handling ordering of categories.
  *
- * @package    qbank_managecategories
+ * @module     qbank_managecategories
  * @copyright  2021 Catalyst IT Australia Pty Ltd
  * @author     Ghaly Marc-Alexandre <marc-alexandreghaly@catalyst-ca.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -72,7 +72,10 @@ class OrderCategories {
     /**
      * Call external function update_category_order - inserts the updated column in the question_categories table.
      *
-     * @param {string} updatedCategories String containing new sortorder.
+     * @param {string} newCatOrder String containing new ordered categories.
+     * @param {int} originCategory Category which was dragged.
+     * @param {int} destinationContext Context where category was dropped.
+     * @param {int} originContext Context from which the category was dragged.
      * @returns {Promise}
      */
     setCatOrder = (newCatOrder, originCategory, destinationContext, originContext) => {
@@ -93,6 +96,9 @@ class OrderCategories {
                 } else {
                     reject();
                 }
+                return;
+            }).catch(() => {
+                return;
             });
         });
         return promise;

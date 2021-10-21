@@ -17,7 +17,7 @@
  * Javascript module for addition or edition of category as a modal form.
  * Clicking "Add category" or "Edit > Edit settings" will trigger this modal.
  *
- * @package    qbank_managecategories
+ * @module     qbank_managecategories
  * @copyright  2021 Catalyst IT Australia Pty Ltd
  * @author     Ghaly Marc-Alexandre <marc-alexandreghaly@catalyst-ca.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,6 +25,7 @@
  */
 
 import * as Str from 'core/str';
+import Notification from 'core/notification';
 import ModalFactory from 'core/modal_factory';
 import ModalEvents from 'core/modal_events';
 import Fragment from 'core/fragment';
@@ -71,8 +72,19 @@ const displayModal = (selector, contextid, categoryid) => {
         .then(() => {
           modal.hide();
           location.reload();
+          return;
         })
-        .catch(() => {});
+        .catch((error) => {
+          if (error.errorcode === "idnumberexists") {
+            return;
+          }
+          modal.hide();
+          Notification.addNotification({
+            message: error.message,
+            type: 'error'
+          });
+          return;
+        });
       });
     });
 };
@@ -123,7 +135,7 @@ const handleFormSubmissionFailure = (modal, contextid, categoryid, formdata, mod
  * @param {int} contextid Context id for fragment.
  * @param {int} modalid Id for the modal created - passed to avoid atto editor to send infos to other forms.
  * @param {Event} e Form submission event.
- * @returns {Mixed}
+ * @returns {Promise} Resolved when successful.
  */
 const submitFormAjax = (modal, categoryid, contextid, modalid, e) => {
   e.preventDefault();
@@ -144,7 +156,9 @@ const submitFormAjax = (modal, categoryid, contextid, modalid, e) => {
   }
 
   const formData = modal.getRoot().find('form').serialize();
-  const idparent = modal.getRoot().find('#id_parent')[0].value;
+  let catcontext = modal.getRoot().find('#id_parent')[0].value;
+  catcontext = catcontext.split(',');
+  const parentid = catcontext[0];
   const name = modal.getRoot().find('#id_name')[0].value;
   let categoryinfo = modal.getRoot().find('#id_infoeditable')[0];
   // Handles any change of id when idnumber exists or missing name;
@@ -154,6 +168,7 @@ const submitFormAjax = (modal, categoryid, contextid, modalid, e) => {
   } else {
     categoryinfo = categoryinfo.textContent;
   }
+  const infoformat = modal.getRoot().find('#menuinfoformat')[0].value;
   const idnumber = modal.getRoot().find('#id_idnumber')[0].value;
   let methodname = 'qbank_managecategories_update_question_category';
   if (categoryid === undefined) {
@@ -162,15 +177,17 @@ const submitFormAjax = (modal, categoryid, contextid, modalid, e) => {
   const promise = new Promise((resolve, reject) => {
     const response = Ajax.call([{
       methodname: methodname,
-      args: {parent: idparent, name: name, info: categoryinfo, infoformat: 1, idnumber: idnumber, id: categoryid},
+      args: {parent: parentid, name: name, info: categoryinfo, infoformat: infoformat, idnumber: idnumber, id: categoryid},
       fail: handleFormSubmissionFailure(modal, contextid, categoryid, formData, modalid)
     }]);
     response[0].then((resp) => {
-      if (JSON.parse(resp) === false || JSON.parse(resp) === -1) {
-        reject();
-      } else {
+      if (Number.isInteger(resp)) {
         resolve();
       }
+      return;
+    }).catch((error) => {
+      reject(error);
+      return;
     });
   });
   return promise;

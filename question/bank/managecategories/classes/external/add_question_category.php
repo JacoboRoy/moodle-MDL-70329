@@ -20,7 +20,7 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . "/externallib.php");
 
-use context_system;
+use context;
 use external_api;
 use external_function_parameters;
 use external_value;
@@ -45,11 +45,11 @@ class add_question_category extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters(
             [
-                'parent' => new external_value(PARAM_TEXT, 'parent'),
-                'name' => new external_value(PARAM_TEXT, 'name'),
-                'info' => new external_value(PARAM_RAW, 'info'),
-                'infoformat' => new external_value(PARAM_INT, 'infoformat'),
-                'idnumber' => new external_value(PARAM_TEXT, 'idnumber')
+                'parent' => new external_value(PARAM_INT, 'Parent of the category'),
+                'name' => new external_value(PARAM_TEXT, 'New category name'),
+                'info' => new external_value(PARAM_RAW, 'New category information/description'),
+                'infoformat' => new external_value(PARAM_INT, 'Description format. One of the FORMAT_ constants'),
+                'idnumber' => new external_value(PARAM_RAW, 'Category idnumber, unique')
             ]);
     }
 
@@ -74,64 +74,43 @@ class add_question_category extends external_api {
                                             'infoformat' => $infoformat,
                                             'idnumber' => $idnumber]);
 
-        $context = context_system::instance();
+        $contextid = $DB->get_field('question_categories', 'contextid', ['id' => $params['parent']]);
+        $context = context::instance_by_id($contextid);
         self::validate_context($context);
         require_capability('moodle/category:manage', $context);
 
-        $newparent = $params['parent'];
+        $parentid = $params['parent'];
         $newcategory = $params['name'];
         $newinfo = format_text($params['info'], $params['infoformat'], ['noclean' => false]);
         $idnumber = $params['idnumber'];
 
-        if (empty($newcategory)) {
-            throw new moodle_exception('categorynamecantbeblank', 'question');
-        }
-
-        list($parentid, $contextid) = explode(',', $newparent);
-
-        if (isset($idnumber)) {
-            $exists = helper::idnumber_exists($idnumber, $contextid);
-            if ($exists) {
-                return false;
-            }
-        }
-
-        if ($parentid) {
-            if (!($DB->get_field('question_categories', 'contextid', ['id' => $parentid]) == $contextid)) {
-                throw new moodle_exception('cannotinsertquestioncatecontext', 'question', '',
-                    ['cat' => $newcategory, 'ctx' => $contextid]);
-            }
+        $exists = helper::get_idnumber($idnumber, $contextid);
+        if ($exists) {
+            throw new moodle_exception('idnumberexists', 'qbank_managecategories');
         }
 
         if ((string) $idnumber === '') {
             $idnumber = null;
-        } else if (!empty($contextid)) {
-            // While this check already exists in the form validation, this is a backstop preventing unnecessary errors.
-            if ($DB->record_exists('question_categories',
-                    ['idnumber' => $idnumber, 'contextid' => $contextid])) {
-                $idnumber = null;
-            }
         }
 
         $cat = new stdClass();
-        $cat->parent = clean_param($parentid, PARAM_INT);
-        $cat->contextid = clean_param($contextid, PARAM_INT);
+        $cat->parent = $parentid;
+        $cat->contextid = $contextid;
         $cat->name = $newcategory;
         $cat->info = $newinfo;
         $cat->infoformat = $params['infoformat'];
         $cat->sortorder = 999;
         $cat->stamp = make_unique_id_code();
         $cat->idnumber = $idnumber;
-        $categoryid = $DB->insert_record("question_categories", $cat);
-
+        $categoryid = $DB->insert_record('question_categories', $cat);
         // Log the creation of this category.
         $category = new stdClass();
-        $category->id = clean_param($categoryid, PARAM_INT);
-        $category->contextid = clean_param($contextid, PARAM_INT);
+        $category->id = $categoryid;
+        $category->contextid = $contextid;
         $event = \core\event\question_category_created::create_from_question_category_instance($category);
         $event->trigger();
-        $success = ($categoryid) ? $categoryid : -1;
-        return $success;
+
+        return $categoryid;
     }
 
     /**
@@ -140,6 +119,6 @@ class add_question_category extends external_api {
      * @return external_value
      */
     public static function execute_returns() {
-        return new external_value(PARAM_INT, 'Added question category id if successful -1 if fail');
+        return new external_value(PARAM_INT, 'Added category id.');
     }
 }

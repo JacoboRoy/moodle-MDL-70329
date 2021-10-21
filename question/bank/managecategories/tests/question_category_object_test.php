@@ -127,14 +127,16 @@ class question_category_object_test extends \advanced_testcase {
     public function test_question_category_created() {
         // Trigger and capture the event.
         $sink = $this->redirectEvents();
-        $categoryid = add_question_category::execute($this->defaultcategory, 'Old name', 'Old description', 1, 'frog');
+        $idparent = explode(',', $this->defaultcategory)[0];
+        $id = add_question_category::execute($idparent, 'Old name', 'Old description', 1, 'frog');
         $events = $sink->get_events();
         $event = reset($events);
 
         // Check that the event data is valid.
         $this->assertInstanceOf('\core\event\question_category_created', $event);
         $this->assertEquals(context_module::instance($this->quiz->cmid), $event->get_context());
-        $expected = [$this->course->id, 'quiz', 'addcategory', 'view.php?id=' . $this->quiz->cmid , $categoryid, $this->quiz->cmid];
+        $expected = [$this->course->id, 'quiz', 'addcategory', 'view.php?id=' . $this->quiz->cmid , $id,
+                        $this->quiz->cmid];
         $this->assertEventLegacyLogData($expected, $event);
         $this->assertEventContextNotUsed($event);
     }
@@ -146,18 +148,19 @@ class question_category_object_test extends \advanced_testcase {
      */
     public function test_question_category_deleted() {
         // Create the category.
-        $categoryid = add_question_category::execute($this->defaultcategory, 'Old name', 'Old description', 1, 'frog');
+        $idparent = explode(',', $this->defaultcategory)[0];
+        $id = add_question_category::execute($idparent, 'Old name', 'Old description', 1, 'frog');
 
         // Trigger and capture the event.
         $sink = $this->redirectEvents();
-        $this->qcobjectquiz->delete_category($categoryid);
+        $this->qcobjectquiz->delete_category($id);
         $events = $sink->get_events();
         $event = reset($events);
 
         // Check that the event data is valid.
         $this->assertInstanceOf('\core\event\question_category_deleted', $event);
         $this->assertEquals(context_module::instance($this->quiz->cmid), $event->get_context());
-        $this->assertEquals($categoryid, $event->objectid);
+        $this->assertEquals($id, $event->objectid);
         $this->assertDebuggingNotCalled();
     }
 
@@ -168,18 +171,19 @@ class question_category_object_test extends \advanced_testcase {
      */
     public function test_question_category_updated() {
         // Create the category.
-        $categoryid = add_question_category::execute($this->defaultcategory, 'Old name', 'Old description', 1, 'frog');
+        $idparent = explode(',', $this->defaultcategory)[0];
+        $id = add_question_category::execute($idparent, 'Old name', 'Old description', 1, 'frog');
 
         // Trigger and capture the event.
         $sink = $this->redirectEvents();
-        update_question_category::execute($this->defaultcategory, 'new name', 'new cat info', 1, 'bla', $categoryid);
+        update_question_category::execute($idparent, 'new name', 'new cat info', 1, 'bla', $id);
         $events = $sink->get_events();
         $event = reset($events);
 
         // Check that the event data is valid.
         $this->assertInstanceOf('\core\event\question_category_updated', $event);
         $this->assertEquals(context_module::instance($this->quiz->cmid), $event->get_context());
-        $this->assertEquals($categoryid, $event->objectid);
+        $this->assertEquals($id, $event->objectid);
         $this->assertDebuggingNotCalled();
     }
 
@@ -192,11 +196,12 @@ class question_category_object_test extends \advanced_testcase {
      */
     public function test_question_category_viewed() {
         // Create the category.
-        $categoryid = add_question_category::execute($this->defaultcategory, 'Old name', 'Old description', 1, 'frog');
+        $idparent = explode(',', $this->defaultcategory)[0];
+        $id = add_question_category::execute($idparent, 'Old name', 'Old description', 1, 'frog');
 
         // Log the view of this category.
         $category = new stdClass();
-        $category->id = $categoryid;
+        $category->id = $id;
         $context = context_module::instance($this->quiz->cmid);
         $event = \core\event\question_category_viewed::create_from_question_category_instance($category, $context);
 
@@ -209,7 +214,7 @@ class question_category_object_test extends \advanced_testcase {
         // Check that the event data is valid.
         $this->assertInstanceOf('\core\event\question_category_viewed', $event);
         $this->assertEquals(context_module::instance($this->quiz->cmid), $event->get_context());
-        $this->assertEquals($categoryid, $event->objectid);
+        $this->assertEquals($id, $event->objectid);
         $this->assertDebuggingNotCalled();
 
     }

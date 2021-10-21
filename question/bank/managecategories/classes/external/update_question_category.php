@@ -46,12 +46,12 @@ class update_question_category extends external_api {
     public static function execute_parameters() {
         return new external_function_parameters(
             [
-                'parent' => new external_value(PARAM_TEXT, 'parent'),
-                'name' => new external_value(PARAM_TEXT, 'name'),
-                'info' => new external_value(PARAM_RAW, 'info'),
-                'infoformat' => new external_value(PARAM_INT, 'infoformat'),
-                'idnumber' => new external_value(PARAM_TEXT, 'idnumber'),
-                'id' => new external_value(PARAM_INT, 'categoryid')
+                'parent' => new external_value(PARAM_INT, 'Parent of the category'),
+                'name' => new external_value(PARAM_TEXT, 'New category name'),
+                'info' => new external_value(PARAM_RAW, 'New category informations/description'),
+                'infoformat' => new external_value(PARAM_INT, 'Description format. One of the FORMAT_ constants'),
+                'idnumber' => new external_value(PARAM_RAW, 'Category idnumber, unique'),
+                'id' => new external_value(PARAM_INT, 'Category id')
             ]);
     }
 
@@ -78,7 +78,8 @@ class update_question_category extends external_api {
                                             'idnumber' => $idnumber,
                                             'id' => $id]);
 
-        $context = context_system::instance();
+        $contextid = $DB->get_field('question_categories', 'contextid', ['id' => $params['parent']]);
+        $context = context::instance_by_id($contextid);
         self::validate_context($context);
         require_capability('moodle/category:manage', $context);
 
@@ -88,26 +89,21 @@ class update_question_category extends external_api {
         $newinfo = format_text($params['info'], $params['infoformat'], ['noclean' => false]);
         $idnumber = $params['idnumber'];
 
-        if (empty($newname)) {
-            throw new moodle_exception('categorynamecantbeblank', 'question');
-        }
-
         // Get the record we are updating.
         $oldcat = $DB->get_record('question_categories', ['id' => $updateid]);
         $lastcategoryinthiscontext = helper::question_is_only_child_of_top_category_in_context($updateid);
 
         if (!empty($newparent) && !$lastcategoryinthiscontext) {
-            list($parentid, $tocontextid) = explode(',', $newparent);
+            $parentid = $params['parent'];
+            $tocontextid = $contextid;
         } else {
             $parentid = $oldcat->parent;
             $tocontextid = $oldcat->contextid;
         }
 
-        if (isset($idnumber)) {
-            $exists = helper::idnumber_exists($idnumber, $tocontextid);
-            if ($exists && $exists !== $updateid) {
-                return false;
-            }
+        $exists = helper::get_idnumber($idnumber, $tocontextid);
+        if ($exists && $exists !== $updateid) {
+            throw new moodle_exception('idnumberexists', 'qbank_managecategories');
         }
 
         $fromcontext = context::instance_by_id($oldcat->contextid);
@@ -127,13 +123,6 @@ class update_question_category extends external_api {
 
         if ((string) $idnumber === '') {
             $idnumber = null;
-        } else if (!empty($tocontextid)) {
-            // While this check already exists in the form validation, this is a backstop preventing unnecessary errors.
-            if ($DB->record_exists_select('question_categories',
-                    'idnumber = ? AND contextid = ? AND id <> ?',
-                    [$idnumber, $tocontextid, $updateid])) {
-                $idnumber = null;
-            }
         }
 
         // Update the category record.
@@ -142,17 +131,18 @@ class update_question_category extends external_api {
         $cat->name = $newname;
         $cat->info = $newinfo;
         $cat->infoformat = $params['infoformat'];
-        $cat->parent = clean_param($parentid, PARAM_INT);
-        $cat->contextid = clean_param($tocontextid, PARAM_INT);
+        $cat->parent = $parentid;
+        $cat->contextid = $tocontextid;
         $cat->idnumber = $idnumber;
         if ($newstamprequired) {
             $cat->stamp = make_unique_id_code();
         }
-        $success = $DB->update_record('question_categories', $cat);
+        $DB->update_record('question_categories', $cat);
         // Log the update of this category.
         $event = \core\event\question_category_updated::create_from_question_category_instance($cat);
         $event->trigger();
-        return $success;
+
+        return $updateid;
     }
 
     /**
@@ -161,6 +151,6 @@ class update_question_category extends external_api {
      * @return external_value
      */
     public static function execute_returns() {
-        return new external_value(PARAM_BOOL, 'Returns true on successful update');
+        return new external_value(PARAM_INT, 'Updated category id');
     }
 }

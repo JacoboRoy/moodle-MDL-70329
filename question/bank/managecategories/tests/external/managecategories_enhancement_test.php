@@ -28,6 +28,7 @@ namespace qbank_managecategories;
 defined('MOODLE_INTERNAL') || die();
 
 use advanced_testcase;
+use moodle_exception;
 use qbank_managecategories\external\update_category_order;
 use qbank_managecategories\external\add_question_category;
 use qbank_managecategories\external\update_question_category;
@@ -80,7 +81,7 @@ class managecategories_enhancement_test extends advanced_testcase {
 
         $this->generator = $this->getDataGenerator()->get_plugin_generator('core_question');
         $this->category = $this->generator->create_question_category();
-        $this->idparent = $this->category->parent . ',' . $this->category->contextid;
+        $this->idparent = $this->category->parent;
         $this->name = 'Dummy name';
         $this->categoryinfo = 'Dummy category info';
         $this->idnumber = 'Dummy id num';
@@ -181,7 +182,7 @@ class managecategories_enhancement_test extends advanced_testcase {
      */
     public function test_add_category_no_idnumber() {
         global $DB;
-        $idnumber = null;
+        $idnumber = '';
 
         add_question_category::execute($this->idparent, $this->name, $this->categoryinfo, 1, $idnumber);
 
@@ -215,10 +216,10 @@ class managecategories_enhancement_test extends advanced_testcase {
     public function test_add_category_try_to_set_duplicate_idnumber() {
         global $DB;
         $idnumber = 'frog';
-        $firstadd = add_question_category::execute($this->idparent, $this->name, $this->categoryinfo, 1, $idnumber);
+        $id = add_question_category::execute($this->idparent, $this->name, $this->categoryinfo, 1, $idnumber);
+        $this->assertIsInt($id);
+        $this->expectException(moodle_exception::class);
         $secondadd = add_question_category::execute($this->idparent, $this->name, $this->categoryinfo, 1, $idnumber);
-        $this->assertIsInt($firstadd);
-        $this->assertFalse($secondadd);
     }
 
 
@@ -230,7 +231,7 @@ class managecategories_enhancement_test extends advanced_testcase {
     public function test_update_category_removing_idnumber() {
         global $DB;
         $idnumber = 'frog';
-        $newidnumber = null;
+        $newidnumber = '';
         $id = add_question_category::execute($this->idparent, $this->name, $this->categoryinfo, 1, $idnumber);
         $categoryjustadded = $DB->get_record('question_categories', ['id' => $id], '*', MUST_EXIST);
         update_question_category::execute($this->idparent, $this->name, $this->categoryinfo, 1, $newidnumber,
@@ -268,12 +269,8 @@ class managecategories_enhancement_test extends advanced_testcase {
         global $DB;
 
         $id = add_question_category::execute($this->idparent, 'Old name', 'Old description', 1, 'frog');
-        $secondid = add_question_category::execute($this->idparent, 'Aborted update', 'Old description', 1, 'toad');
-
-        update_question_category::execute($this->idparent, 'Old name', 'Old description', 1, 'frog', $secondid);
-
-        $newcat = $DB->get_record('question_categories', ['id' => $secondid], '*', MUST_EXIST);
-        $this->assertSame('Aborted update', $newcat->name);
-        $this->assertSame($newcat->idnumber, 'toad');
+        $id2 = add_question_category::execute($this->idparent, 'Aborted update', 'Old description', 1, 'toad');
+        $this->expectException(moodle_exception::class);
+        update_question_category::execute($this->idparent, 'Old name', 'Old description', 1, 'frog', $id2);
     }
 }

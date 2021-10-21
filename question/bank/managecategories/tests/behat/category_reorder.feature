@@ -92,7 +92,7 @@ Feature: A Teacher can reorder question categories
     And I click on "//button[contains(text(), 'Save changes')]" "xpath_element"
     And I drag "Course category 2" and I drop it in "System category" in the question category list
     Then "Course category 2" "text" should appear before "System category" "text"
-    And I should see "ID number already in use, please change it to move category"
+    And I should see "ID number already in use, please change it to move or update category"
 
   @javascript
   Scenario: Non editing teacher cannot drag and drop or see editing menus

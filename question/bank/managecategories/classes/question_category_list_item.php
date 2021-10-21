@@ -91,7 +91,7 @@ class question_category_list_item extends list_item {
         $courseid = optional_param('courseid', 0, PARAM_INT);
         // Each section adds html to be displayed as part of this list item.
         $nodeparent = $PAGE->settingsnav->find('questionbank', navigation_node::TYPE_CONTAINER);
-        $questionbankurl = new moodle_url($nodeparent->action->get_path(), $this->parentlist->pageurl->params());
+        $questionbankurl = new moodle_url($nodeparent->action->out(), $this->parentlist->pageurl->params());
         $questionbankurl->param('cat', $category->id . ',' . $category->contextid);
         $categoryname = format_string($category->name, true, ['context' => $this->parentlist->context]);
         $idnumber = null;

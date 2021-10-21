@@ -106,7 +106,7 @@ if ($param->delete) {
     $questionstomove = 0;
 }
 
-if ((!empty($param->delete) and (!$questionstomove) and confirm_sesskey())) {
+if ((!empty($param->delete) && (!$questionstomove) && confirm_sesskey())) {
     $qcobject->delete_category($param->delete);// Delete the category now no questions to move.
     $thispageurl->remove_params('cat', 'category');
     redirect($thispageurl);
