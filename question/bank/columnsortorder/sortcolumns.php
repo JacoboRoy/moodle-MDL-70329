@@ -32,7 +32,7 @@ admin_externalpage_setup('qbank_columnsortorder', '', ['section' => 'columnsorto
 $PAGE->requires->js_call_amd('qbank_columnsortorder/sort_columns', 'init');
 $renderer = $PAGE->get_renderer('qbank_columnsortorder');
 
-echo $OUTPUT->header(),
-     $OUTPUT->heading(new lang_string('qbankcolumnsortorder', 'qbank_columnsortorder')),
-     $renderer->render_column_sort_ui(),
-     $OUTPUT->footer();
+echo $OUTPUT->header();
+echo $OUTPUT->heading(new lang_string('qbankcolumnsortorder', 'qbank_columnsortorder'));
+echo $renderer->render_column_sort_ui();
+echo $OUTPUT->footer();

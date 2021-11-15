@@ -22,8 +22,8 @@
  *
  */
 
-import Ajax from 'core/ajax';
-import Notification from 'core/notification';
+import {call as fetchMany} from 'core/ajax';
+import {exception as displayException} from 'core/notification';
 import SortableList from 'core/sortable_list';
 import jQuery from 'jquery';
 
@@ -39,38 +39,26 @@ const setupSortableLists = () => {
     );
 
     jQuery('.item').on(SortableList.EVENTS.DROP, () => {
-        let columnorder = getColumnOrder();
-        setOrder(columnorder.join());
-        jQuery('.item').removeClass('active');
+        const columns = getColumnOrder();
+        setOrder(columns).catch(displayException);
+        document.querySelectorAll('.item').forEach(item => item.classList.remove('active'));
     });
 
     jQuery('.item').on(SortableList.EVENTS.DRAGSTART, (event) => {
-        jQuery(event.currentTarget).addClass('active');
+        event.currentTarget.classList.add('active');
     });
 };
 
 /**
  * Call external function set_order - inserts the updated column in the config_plugins table.
  *
- * @param {String} updatedcolumn String that contains column order.
+ * @param {String} columns String that contains column order.
+ * @returns {Promise}
  */
-const setOrder = (updatedcolumn) => {
-    Ajax.call([{
+const setOrder = columns => fetchMany([{
         methodname: 'qbank_columnsortorder_set_columnbank_order',
-        args: {columns: JSON.stringify(updatedcolumn)},
-        fail: Notification.exception
-    }]);
-};
-
-/**
- * Gets an array duplicate.
- *
- * @param {Array} columnsDuplicate Array to search duplicates for.
- * @returns {Object}
- */
-const findDuplicates = (columnsDuplicate) => {
-    return columnsDuplicate.filter((item, index) => columnsDuplicate.indexOf(item) !== index);
-};
+        args: {columns: columns},
+    }])[0];
 
 /**
  * Gets the newly reordered columns to display in the question bank view.
@@ -78,17 +66,13 @@ const findDuplicates = (columnsDuplicate) => {
  * @returns {Array}
  */
 const getColumnOrder = () => {
-    let updated = [...document.querySelectorAll('.column')];
-    let columns = new Array(updated.length);
-    for (let i = 0; i < updated.length; i++) {
-        columns[i] = updated[i].innerText.trim();
-    }
-    if (findDuplicates(columns).length !== 0) {
-        columns.pop();
-    }
-    return columns;
+    const columns = Array.from(document.querySelectorAll('.column[data-pluginname]')).map(column => column.dataset.pluginname);
+    return columns.filter((value, index) => columns.indexOf(value) === index);
 };
 
+/**
+ * Initialize module
+ */
 export const init = () => {
     setupSortableLists();
 };

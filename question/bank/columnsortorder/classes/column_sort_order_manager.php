@@ -45,24 +45,16 @@ class column_sort_order_manager {
      *
      */
     public function __construct() {
-        $this->load_order();
+        $this->columnorder = array_flip(explode(',', get_config('qbank_columnsortorder', 'columnsortorder')));
     }
 
     /**
-     * Loads the current column order from config_plugin table.
+     * Method setting column order in the qbank_columnsortorder plugin config.
      *
      */
-    protected function load_order(): void {
-        $this->columnorder = (array)get_config('qbank_columnsortorder');
-
-        // Cleans rows that are not columns.
-        if (array_key_exists('version', $this->columnorder)) {
-            unset($this->columnorder['version']);
-        }
-
-        if (array_key_exists('disabled', $this->columnorder)) {
-            unset($this->columnorder['disabled']);
-        }
+    public function set_column_order(array $columns) : void {
+        $columns = implode(',', $columns);
+        set_config('columnsortorder', $columns, 'qbank_columnsortorder');
     }
 
     /**
@@ -108,15 +100,18 @@ class column_sort_order_manager {
      */
     public function remove_unused_column_from_db(string $plugintoremove): void {
         $qbankplugins = $this->get_question_list_columns();
+        $config = $this->columnorder;
         foreach ($qbankplugins as $plugin) {
             if (strpos($plugin->classcol, $plugintoremove) !== false) {
                 if ($plugintoremove === 'qbank_customfields') {
                     unset_config($plugin->class, 'qbank_columnsortorder');
                 } else {
-                    unset_config($plugin->colname, 'qbank_columnsortorder');
+                    unset($config[$plugin->colname]);
                 }
             }
         }
+        $config = implode(',', array_flip($config));
+        set_config('columnsortorder', $config, 'qbank_columnsortorder');
     }
 
     /**
