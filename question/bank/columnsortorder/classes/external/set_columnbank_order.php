@@ -22,7 +22,7 @@ use external_api;
 use external_function_parameters;
 use external_multiple_structure;
 use external_value;
-use qbank_columnsortorder\column_sort_order_manager;
+use qbank_columnsortorder\column_manager;
 use stdClass;
 
 /**
@@ -66,6 +66,6 @@ class set_columnbank_order extends external_api {
         self::validate_context($context);
         require_capability('moodle/category:manage', $context);
 
-        column_sort_order_manager::set_column_order($columns);
+        column_manager::set_column_order($columns);
     }
 }

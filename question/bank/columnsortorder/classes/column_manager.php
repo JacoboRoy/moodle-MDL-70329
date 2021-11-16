@@ -22,26 +22,25 @@ require_once($CFG->libdir . '/questionlib.php');
 
 use core_question\local\bank\view;
 use moodle_url;
-use stdClass;
 use context_system;
 use question_edit_contexts;
 
 /**
- * Class column_sort_order_manager responsible for loading and saving order to the config setting.
+ * Class column_manager responsible for loading and saving order to the config setting.
  *
  * @package    qbank_columnsortorder
  * @copyright  2021 Catalyst IT Australia Pty Ltd
  * @author     Ghaly Marc-Alexandre <marc-alexandreghaly@catalyst-ca.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class column_sort_order_manager {
+class column_manager {
     /**
      * @var array Column order as set in config_plugins 'class' => 'position', ie: question_type_column => 3.
      */
-    protected $columnorder;
+    public $columnorder;
 
     /**
-     * Constructor for column_sort_order_manager class.
+     * Constructor for column_manager class.
      *
      */
     public function __construct() {
@@ -52,7 +51,7 @@ class column_sort_order_manager {
      * Method setting column order in the qbank_columnsortorder plugin config.
      *
      */
-    public function set_column_order(array $columns) : void {
+    public static function set_column_order(array $columns) : void {
         $columns = implode(',', $columns);
         set_config('columnsortorder', $columns, 'qbank_columnsortorder');
     }
@@ -62,35 +61,34 @@ class column_sort_order_manager {
      *
      * @return array
      */
-    public function get_question_list_columns(): array {
-        $result = [];
-
-        $course = new stdClass();
-        $course->id = 0;
+    protected function get_enabled_columns(): array {
+        $course = (object) ['id' => 0];
         $context = context_system::instance();
         $contexts = new question_edit_contexts($context);
         // Dummy call to get the objects without error.
         $questionbank = new view($contexts, new moodle_url('/question/dummyurl.php'), $course, null);
+        return $questionbank->get_visiblecolumns();
+    }
 
-        foreach ($questionbank->get_visiblecolumns() as $key => $column) {
+    /**
+     * Get the columns of the question list.
+     *
+     * @return array
+     */
+    public function get_columns(): array {
+        $columns = [];
+        foreach ($this->get_enabled_columns() as $key => $column) {
             if ($column->get_name() === 'checkbox') {
                 continue;
             }
-            $element = new stdClass();
-            $element->class = $key;
-            if (substr($key, 0, 5) === 'qbank') {
-                $classelements = explode('\\', $key);
-                $element->name = get_string('pluginname', $classelements[0]);
-                $element->colname = $classelements[1];
-            } else {
-                $classelements = explode('\\', $key);
-                $element->name = ucfirst($column->get_name());
-                $element->colname = end($classelements);
-            }
-            $element->classcol = explode('\\', get_class($column))[0] . '\\' . $element->colname;
-            $result[] = $element;
+            $classelements = explode('\\', $key);
+            $columns[] = (object) [
+                'class' => get_class($column),
+                'name' => $column->get_title(),
+                'colname' => end($classelements),
+            ];
         }
-        return $result;
+        return $columns;
     }
 
     /**
@@ -99,7 +97,7 @@ class column_sort_order_manager {
      * @param string $plugintoremove Plugin type and name ie: qbank_viewcreator.
      */
     public function remove_unused_column_from_db(string $plugintoremove): void {
-        $qbankplugins = $this->get_question_list_columns();
+        $qbankplugins = $this->get_columns();
         $config = $this->columnorder;
         foreach ($qbankplugins as $plugin) {
             if (strpos($plugin->classcol, $plugintoremove) !== false) {

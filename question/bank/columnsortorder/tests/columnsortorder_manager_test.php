@@ -19,7 +19,7 @@ namespace qbank_columnsortorder;
 defined('MOODLE_INTERNAL') || die();
 
 use advanced_testcase;
-use qbank_columnsortorder\column_sort_order_manager;
+use qbank_columnsortorder\column_manager;
 use qbank_columnsortorder\external\set_columnbank_order;
 use core_question\local\bank\view;
 use context_course;
@@ -48,12 +48,12 @@ class columnsortorder_manager_test extends advanced_testcase {
         $this->setAdminUser();
     }
     /**
-     * Test function get_question_list_columns in helper class, that proper data is returned.
+     * Test function get_columns in helper class, that proper data is returned.
      *
      */
     public function test_getcolumn_function(): void {
-        $columnsortorder = new column_sort_order_manager();
-        $questionlistcolumns = $columnsortorder->get_question_list_columns();
+        $columnsortorder = new column_manager();
+        $questionlistcolumns = $columnsortorder->get_columns();
         $this->assertIsArray($questionlistcolumns);
         foreach ($questionlistcolumns as $columnnobject) {
             $this->assertObjectHasAttribute('class', $columnnobject);
@@ -71,8 +71,8 @@ class columnsortorder_manager_test extends advanced_testcase {
         $columnindb = (array)get_config('qbank_columnsortorder');
         unset($columnindb['version']);
         $this->assertEmpty($columnindb);
-        $columnsortorder = new column_sort_order_manager();
-        $questionlistcolumns = $columnsortorder->get_question_list_columns();
+        $columnsortorder = new column_manager();
+        $questionlistcolumns = $columnsortorder->get_columns();
         $columnclasses = [];
         foreach ($questionlistcolumns as $columnnobject) {
             $columnclasses[] = $columnnobject->class;
@@ -110,7 +110,7 @@ class columnsortorder_manager_test extends advanced_testcase {
             $classname = new ReflectionClass(get_class($columnn));
             $name[] = $classname->getShortName();
         }
-        $columnorder = new column_sort_order_manager();
+        $columnorder = new column_manager();
         $neworder = implode(',', $columnorder->sort_columns($name));
         set_columnbank_order::execute($neworder);
         $currentconfig = get_config('qbank_columnsortorder');

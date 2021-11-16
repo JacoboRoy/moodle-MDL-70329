@@ -34,19 +34,19 @@
     {{#str}}qbanksortdescription, qbank_columnsortorder{{/str}}
 </div>
 <br>
-<div class="list list-group" id="sortablecolumncontainer">
+<div class="list list-group" id="qbank_columnsortorder-{{uniqid}}">
     {{#names}}
-        <div class="item list-group-item list-group-item-action">
+        <div class="column item list-group-item list-group-item-action" data-pluginname={{class}}>
             {{>core/drag_handle}}
-            {{name}}
-            <div class="d-none">
-                <span class="column" data-pluginname={{hiddenname}}>
-                    {{hiddenname}}
-                </span>
-            </div>
+            {{name}} {{colname}}
         </div>
     {{/names}}
 </div>
+{{#js}}
+require(['qbank_columnsortorder/sort_columns'], function(SortColumns) {
+    SortColumns.init("qbank_columnsortorder-{{uniqid}}");
+});
+{{/js}}
 <br>
 <div>
     {{{urltomanageqbanks}}}

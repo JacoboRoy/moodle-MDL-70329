@@ -29,7 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once($CFG->dirroot . '/question/editlib.php');
 use core_plugin_manager;
 use core_question\bank\search\condition;
-use qbank_columnsortorder\column_sort_order_manager;
+use qbank_columnsortorder\column_manager;
 use qbank_editquestion\editquestion_helper;
 use qbank_managecategories\helper;
 
@@ -273,7 +273,7 @@ class view {
 
         // Check if qbank_columnsortorder is enabled.
         if (array_key_exists('columnsortorder', core_plugin_manager::instance()->get_enabled_plugins('qbank'))) {
-            $columnorder = new column_sort_order_manager();
+            $columnorder = new column_manager();
             $questionbankclasscolumns = $columnorder->sort_columns($questionbankclasscolumns);
         }
 

@@ -16,7 +16,7 @@
 
 namespace qbank_columnsortorder\output;
 
-use qbank_columnsortorder\column_sort_order_manager;
+use qbank_columnsortorder\column_manager;
 use html_writer;
 use moodle_url;
 use plugin_renderer_base;
@@ -35,17 +35,19 @@ class renderer extends plugin_renderer_base {
      * @return string The rendered HTML.
      */
     public function render_column_sort_ui() {
-        $columnsortorder = new column_sort_order_manager();
-        $corequestionbankcolumns = $columnsortorder->get_question_list_columns();
+        $columnsortorder = new column_manager();
+        $corequestionbankcolumns = $columnsortorder->get_columns();
+        $params = [];
         foreach ($corequestionbankcolumns as $columnname) {
-            $name = $columnname->name . ' (' . $columnname->colname . ')';
-            $names['names'][] = ['name' => $name, 'hiddenname' => $columnname->class];
+            $name = $columnname->name;
+            $colname = "($columnname->colname)";
+            $params['names'][] = ['name' => $name, 'colname' => $colname, 'class' => $columnname->class];
         }
 
         $urltoredirect = new moodle_url('/admin/settings.php', ['section' => 'manageqbanks']);
 
-        $names['urltomanageqbanks'] = get_string('qbankgotomanageqbanks', 'qbank_columnsortorder', $urltoredirect->__toString());
+        $params['urltomanageqbanks'] = get_string('qbankgotomanageqbanks', 'qbank_columnsortorder', $urltoredirect->out());
 
-        return $this->render_from_template('qbank_columnsortorder/columnsortorder', $names);
+        return $this->render_from_template('qbank_columnsortorder/columnsortorder', $params);
     }
 }

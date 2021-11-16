@@ -29,8 +29,9 @@ import jQuery from 'jquery';
 
 /**
  * Sets up sortable list in the column sort order page.
+ * @param {Element} listRoot
  */
-const setupSortableLists = () => {
+const setupSortableLists = (listRoot) => {
     new SortableList(
         '.list',
         {
@@ -39,9 +40,9 @@ const setupSortableLists = () => {
     );
 
     jQuery('.item').on(SortableList.EVENTS.DROP, () => {
-        const columns = getColumnOrder();
+        const columns = getColumnOrder(listRoot);
         setOrder(columns).catch(displayException);
-        document.querySelectorAll('.item').forEach(item => item.classList.remove('active'));
+        listRoot.querySelectorAll('.item').forEach(item => item.classList.remove('active'));
     });
 
     jQuery('.item').on(SortableList.EVENTS.DRAGSTART, (event) => {
@@ -62,17 +63,20 @@ const setOrder = columns => fetchMany([{
 
 /**
  * Gets the newly reordered columns to display in the question bank view.
- *
+ * @param {Element} listRoot
  * @returns {Array}
  */
-const getColumnOrder = () => {
-    const columns = Array.from(document.querySelectorAll('.column[data-pluginname]')).map(column => column.dataset.pluginname);
+const getColumnOrder = (listRoot) => {
+    const columns = Array.from(listRoot.querySelectorAll('[data-pluginname]')).map(column => column.dataset.pluginname);
+
     return columns.filter((value, index) => columns.indexOf(value) === index);
 };
 
 /**
  * Initialize module
+ * @param {int} id unique id for columns.
  */
-export const init = () => {
-    setupSortableLists();
+export const init = (id) => {
+    const listRoot = document.querySelector(`#${id}`);
+    setupSortableLists(listRoot);
 };

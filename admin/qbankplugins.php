@@ -27,7 +27,7 @@
 require_once('../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 
-use qbank_columnsortorder\column_sort_order_manager;
+use qbank_columnsortorder\column_manager;
 
 $action = required_param('action', PARAM_ALPHANUMEXT);
 $name   = required_param('name', PARAM_PLUGIN);
@@ -52,7 +52,7 @@ switch ($action) {
     case 'disable':
         if ($plugins[$name]->is_enabled()) {
             $plugintodisable = $plugins[$name]->type . '_' . $plugins[$name]->name;
-            $columnsortordermanager = new column_sort_order_manager();
+            $columnsortordermanager = new column_manager();
             $columnsortordermanager->remove_unused_column_from_db($plugintodisable);
             $class = \core_plugin_manager::resolve_plugininfo_class('qbank');
             $class::enable_plugin($name, false);
