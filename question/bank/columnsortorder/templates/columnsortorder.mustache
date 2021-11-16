@@ -42,6 +42,14 @@
         </div>
     {{/names}}
 </div>
+<br>
+<div>
+    {{#disabled}}
+    <div class="list-group-item disabled">
+        {{disabledclass}} {{disabledcolumn}}
+    </div>
+    {{/disabled}}
+</div>
 {{#js}}
 require(['qbank_columnsortorder/sort_columns'], function(SortColumns) {
     SortColumns.init("qbank_columnsortorder-{{uniqid}}");

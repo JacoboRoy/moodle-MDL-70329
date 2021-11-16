@@ -57,7 +57,7 @@ class column_manager {
     }
 
     /**
-     * Get the columns of the question list.
+     * Get enabled columns.
      *
      * @return array
      */
@@ -92,6 +92,27 @@ class column_manager {
     }
 
     /**
+     * Get disabled columns.
+     *
+     * @return array
+     */
+    public function get_disabled_columns(): array {
+        $columns = $this->get_enabled_columns();
+        $classes = [];
+        foreach ($columns as $key => $column) {
+            $classes[get_class($column)] = $key;
+        }
+        $diffkey = array_diff_key($classes, $this->columnorder);
+        foreach ($diffkey as $class => $value) {
+            $disabled[] = (object) [
+                'disabledclass' => $class,
+                'disabledcolumn' => $value,
+            ];
+        }
+        return $disabled;
+    }
+
+    /**
      * Removes any uninstalled or disabled plugin column in the config_plugins for 'qbank_columnsortorder' plugin.
      *
      * @param string $plugintoremove Plugin type and name ie: qbank_viewcreator.
@@ -100,12 +121,8 @@ class column_manager {
         $qbankplugins = $this->get_columns();
         $config = $this->columnorder;
         foreach ($qbankplugins as $plugin) {
-            if (strpos($plugin->classcol, $plugintoremove) !== false) {
-                if ($plugintoremove === 'qbank_customfields') {
-                    unset_config($plugin->class, 'qbank_columnsortorder');
-                } else {
-                    unset($config[$plugin->colname]);
-                }
+            if (strpos($plugin->class, $plugintoremove) !== false) {
+                unset($config[$plugin->class]);
             }
         }
         $config = implode(',', array_flip($config));
@@ -127,19 +144,15 @@ class column_manager {
             $columnorder = [];
             foreach ($columnsortorder as $classname => $colposition) {
                 $colname = explode('\\', $classname);
-                if (count($colname) > 1) {
-                    $classname = str_replace('\\\\', '\\', $classname);
+                if (strpos($classname, 'qbank_customfields\custom_field_column') !== false) {
+                    unset($colname[0]);
+                    $classname = implode('\\', $colname);
                     $columnorder[$classname] = $colposition;
                 } else {
                     $columnorder[end($colname)] = $colposition;
                 }
             }
             $properorder = array_merge($columnorder, $ordertosort);
-            // If plugin/column disabled unset the proper key.
-            $diffkey = array_diff_key($properorder, $ordertosort);
-            foreach ($diffkey as $keytounset => $class) {
-                unset($properorder[$keytounset]);
-            }
             // Always have the checkbox at first column position.
             if (isset($properorder['checkbox_column'])) {
                 $checkboxfirstelement = $properorder['checkbox_column'];
