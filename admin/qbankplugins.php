@@ -48,12 +48,13 @@ if (!isset($plugins[$name])) {
     throw new moodle_exception('qbanknotfound', 'question', $return, $name);
 }
 
+$plugintypename = $plugins[$name]->type . '_' . $plugins[$name]->name;
+$columnsortordermanager = new column_manager();
+
 switch ($action) {
     case 'disable':
         if ($plugins[$name]->is_enabled()) {
-            $plugintodisable = $plugins[$name]->type . '_' . $plugins[$name]->name;
-            $columnsortordermanager = new column_manager();
-            $columnsortordermanager->remove_unused_column_from_db($plugintodisable);
+            $columnsortordermanager->disablecolumns($plugintypename);
             $class = \core_plugin_manager::resolve_plugininfo_class('qbank');
             $class::enable_plugin($name, false);
             set_config('disabled', 1, 'qbank_'. $name);
@@ -61,6 +62,7 @@ switch ($action) {
         break;
     case 'enable':
         if (!$plugins[$name]->is_enabled()) {
+            $columnsortordermanager->enablecolumns($plugintypename);
             $class = \core_plugin_manager::resolve_plugininfo_class('qbank');
             $class::enable_plugin($name, true);
         }

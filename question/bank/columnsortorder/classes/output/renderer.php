@@ -36,10 +36,10 @@ class renderer extends plugin_renderer_base {
      */
     public function render_column_sort_ui() {
         $columnsortorder = new column_manager();
-        $corequestionbankcolumns = $columnsortorder->get_columns();
+        $enabledcolumns = $columnsortorder->get_columns();
         $disabledcolumns = $columnsortorder->get_disabled_columns();
         $params = [];
-        foreach ($corequestionbankcolumns as $columnname) {
+        foreach ($enabledcolumns as $columnname) {
             $name = $columnname->name;
             $colname = "($columnname->colname)";
             if ($columnname->class === 'qbank_customfields\custom_field_column') {
@@ -47,13 +47,7 @@ class renderer extends plugin_renderer_base {
             }
             $params['names'][] = ['name' => $name, 'colname' => $colname, 'class' => $columnname->class];
         }
-        foreach ($disabledcolumns as $disabledcolumn) {
-            $params['disabled'][] = [
-                'disabledclass' => $disabledcolumn->disabledclass,
-                'disabledcolumn' => $disabledcolumn->disabledcolumn
-            ];
-        }
-
+        $params['disabled'] = $disabledcolumns;
         $urltoredirect = new moodle_url('/admin/settings.php', ['section' => 'manageqbanks']);
 
         $params['urltomanageqbanks'] = get_string('qbankgotomanageqbanks', 'qbank_columnsortorder', $urltoredirect->out());

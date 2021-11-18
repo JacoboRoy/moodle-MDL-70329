@@ -40,44 +40,50 @@ class column_manager {
     public $columnorder;
 
     /**
+     * @var array Disabled columns in config_plugins table.
+     */
+    public $disabledcolumns;
+
+    /**
      * Constructor for column_manager class.
      *
      */
     public function __construct() {
-        $this->columnorder = array_flip(explode(',', get_config('qbank_columnsortorder', 'columnsortorder')));
+        $this->columnorder = array_flip(explode(',', get_config('qbank_columnsortorder', 'columnsortorderenabled')));
+        $this->disabledcolumns = array_flip(explode(',', get_config('qbank_columnsortorder', 'columnsortorderdisabled')));
     }
 
     /**
-     * Method setting column order in the qbank_columnsortorder plugin config.
+     * Sets column order in the qbank_columnsortorder plugin config.
      *
      */
     public static function set_column_order(array $columns) : void {
         $columns = implode(',', $columns);
-        set_config('columnsortorder', $columns, 'qbank_columnsortorder');
+        set_config('columnsortorderenabled', $columns, 'qbank_columnsortorder');
     }
 
     /**
-     * Get enabled columns.
+     * Gets qbank.
      *
      * @return array
      */
-    protected function get_enabled_columns(): array {
+    protected function get_questionbank(): view {
         $course = (object) ['id' => 0];
         $context = context_system::instance();
         $contexts = new question_edit_contexts($context);
         // Dummy call to get the objects without error.
         $questionbank = new view($contexts, new moodle_url('/question/dummyurl.php'), $course, null);
-        return $questionbank->get_visiblecolumns();
+        return $questionbank;
     }
 
     /**
-     * Get the columns of the question list.
+     * Get enabled columns of the question list.
      *
      * @return array
      */
     public function get_columns(): array {
         $columns = [];
-        foreach ($this->get_enabled_columns() as $key => $column) {
+        foreach ($this->get_questionbank()->get_visiblecolumns() as $key => $column) {
             if ($column->get_name() === 'checkbox') {
                 continue;
             }
@@ -97,19 +103,37 @@ class column_manager {
      * @return array
      */
     public function get_disabled_columns(): array {
-        $columns = $this->get_enabled_columns();
-        $classes = [];
-        foreach ($columns as $key => $column) {
-            $classes[get_class($column)] = $key;
-        }
-        $diffkey = array_diff_key($classes, $this->columnorder);
-        foreach ($diffkey as $class => $value) {
-            $disabled[] = (object) [
-                'disabledclass' => $class,
-                'disabledcolumn' => $value,
-            ];
+        $disabledcolumns = $this->disabledcolumns;
+        $disabled = [];
+        foreach ($disabledcolumns as $class => $value) {
+            if ($class !== 0) {
+                if (strpos($class, 'qbank_customfields\custom_field_column') !== false) {
+                    $class = explode('\\', $class);
+                    $disabledname = array_pop($class);
+                    $class = implode('\\', $class);
+                    $disabled[] = (object) [
+                        'disabledname' => $disabledname,
+                    ];
+                } else {
+                    $columnobject = new $class($this->get_questionbank());
+                    $disabled[] = (object) [
+                        'disabledname' => $columnobject->get_title(),
+                    ];
+                }
+            }
         }
         return $disabled;
+    }
+
+    protected function update_config($enabledcolumns, $disabledcolumns): void {
+        if (!empty($enabledcolumns)) {
+            $configenabled = implode(',', array_flip($enabledcolumns));
+            set_config('columnsortorderenabled', $configenabled, 'qbank_columnsortorder');
+        }
+        if (!empty($disabledcolumns)) {
+            $configdisabled = implode(',', array_flip($disabledcolumns));
+            set_config('columnsortorderdisabled', $configdisabled, 'qbank_columnsortorder');
+        }
     }
 
     /**
@@ -118,15 +142,53 @@ class column_manager {
      * @param string $plugintoremove Plugin type and name ie: qbank_viewcreator.
      */
     public function remove_unused_column_from_db(string $plugintoremove): void {
-        $qbankplugins = $this->get_columns();
-        $config = $this->columnorder;
-        foreach ($qbankplugins as $plugin) {
-            if (strpos($plugin->class, $plugintoremove) !== false) {
-                unset($config[$plugin->class]);
+        $enabledcolumns = $this->columnorder;
+        $disabledcolumns = $this->disabledcolumns;
+        foreach ($disabledcolumns as $key => $position) {
+            if (strpos($key, $plugintoremove) !== false) {
+                if (isset($enabledcolumns[$key])) {
+                    unset($enabledcolumns[$key]);
+                }
+                if (isset($disabledcolumns[$key])) {
+                    unset($disabledcolumns[$key]);
+                }
             }
         }
-        $config = implode(',', array_flip($config));
-        set_config('columnsortorder', $config, 'qbank_columnsortorder');
+        $this->update_config($enabledcolumns, $disabledcolumns);
+    }
+
+    /**
+     * Enables columns in the config_plugins for 'qbank_columnsortorder' plugin.
+     *
+     * @param string $plugin Plugin type and name ie: qbank_viewcreator.
+     */
+    public function enablecolumns(string $plugin): void {
+        $enabledcolumns = $this->columnorder;
+        $disabledcolumns = $this->disabledcolumns;
+        foreach ($disabledcolumns as $key => $position) {
+            if (strpos($key, $plugin) !== false) {
+                $enabledcolumns[$key] = $position;
+                unset($disabledcolumns[$key]);
+            }
+        }
+        $this->update_config($enabledcolumns, $disabledcolumns);
+    }
+
+    /**
+     * Disables columns in the config_plugins for 'qbank_columnsortorder' plugin.
+     *
+     * @param string $plugin Plugin type and name ie: qbank_viewcreator.
+     */
+    public function disablecolumns(string $plugin): void {
+        $enabledcolumns = $this->columnorder;
+        $disabledcolumns = $this->disabledcolumns;
+        foreach ($enabledcolumns as $key => $position) {
+            if (strpos($key, $plugin) !== false) {
+                $disabledcolumns[$key] = $position;
+                unset($enabledcolumns[$key]);
+            }
+        }
+        $this->update_config($enabledcolumns, $disabledcolumns);
     }
 
     /**
