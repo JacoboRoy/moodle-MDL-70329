@@ -44,13 +44,14 @@
 </div>
 <br>
 <div>
-    Columns below are currently disabled.
-    <br>
-    <br>
+    {{#columnsdisabled}}
+        {{#str}}qbankcolumnsdisabled, qbank_columnsortorder{{/str}}
+        <br>
+    {{/columnsdisabled}}
     {{#disabled}}
-    <div class="list-group-item disabled">
-        {{disabledname}}
-    </div>
+        <div class="list-group-item disabled">
+            {{disabledname}}
+        </div>
     {{/disabled}}
 </div>
 {{#js}}
