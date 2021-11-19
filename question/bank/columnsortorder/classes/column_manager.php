@@ -132,27 +132,6 @@ class column_manager {
     }
 
     /**
-     * Removes any uninstalled or disabled plugin column in the config_plugins for 'qbank_columnsortorder' plugin.
-     *
-     * @param string $plugintoremove Plugin type and name ie: qbank_viewcreator.
-     */
-    public function remove_unused_column_from_db(string $plugintoremove): void {
-        $enabledcolumns = $this->columnorder;
-        $disabledcolumns = $this->disabledcolumns;
-        foreach ($disabledcolumns as $key => $position) {
-            if (strpos($key, $plugintoremove) !== false) {
-                if (isset($enabledcolumns[$key])) {
-                    unset($enabledcolumns[$key]);
-                }
-                if (isset($disabledcolumns[$key])) {
-                    unset($disabledcolumns[$key]);
-                }
-            }
-        }
-        $this->update_config($enabledcolumns, $disabledcolumns);
-    }
-
-    /**
      * Updates enabled and disabled config for 'qbank_columnsortorder' plugin.
      *
      * @param array $enabledcolumns Enabled columns to set.

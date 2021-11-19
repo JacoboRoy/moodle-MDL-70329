@@ -162,11 +162,4 @@ class qbank extends base {
             $ADMIN->add($parentnodename, $settings);
         }
     }
-
-    public function uninstall_cleanup() {
-        $plugintoremove = $this->type . '_' . $this->name;
-        $columnsortordermanager = new column_manager();
-        $columnsortordermanager->remove_unused_column_from_db($plugintoremove);
-        parent::uninstall_cleanup();
-    }
 }
