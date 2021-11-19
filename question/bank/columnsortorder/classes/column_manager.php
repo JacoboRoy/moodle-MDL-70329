@@ -214,9 +214,16 @@ class column_manager {
 
         foreach ($allcolumns as $column) {
             if (strpos($column->class, $plugin) !== false) {
-                $disabledcolumns[$column->class] = $column->class;
-                if (isset($enabledcolumns[$column->class])) {
-                    unset($enabledcolumns[$column->class]);
+                if ($column->class === 'qbank_customfields\custom_field_column') {
+                    $disabledcolumns[$column->class . '\\' . $column->colname] = $column->class . '\\' . $column->colname;
+                    if (isset($enabledcolumns[$column->class . '\\' . $column->colname])) {
+                        unset($enabledcolumns[$column->class. '\\' . $column->colname]);
+                    }
+                } else {
+                    $disabledcolumns[$column->class] = $column->class;
+                    if (isset($enabledcolumns[$column->class])) {
+                        unset($enabledcolumns[$column->class]);
+                    }
                 }
             }
         }
