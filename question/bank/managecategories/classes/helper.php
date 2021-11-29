@@ -384,4 +384,26 @@ class helper {
         $record = $DB->get_record('question_categories', ['idnumber' => $idnumber, 'contextid' => $contextid]);
         return ($record) ? (int)$record->id : false;
     }
+
+    /**
+     * Gets all descendant(s) of a moved category.
+     *
+     * @param int $categorytoupdate Moved category id.
+     * @param array $parents Array of categories with their appropriate parent, key is the id and value the parent.
+     * @return array $keys Keys representing all descendants of moved category.
+     */
+    public static function get_childs(int $categorytoupdate, array $parents): array {
+        static $keys = [];
+        foreach ($parents as $child => $parent) {
+            if ($child === $categorytoupdate) {
+                $keysfound = array_keys($parents, $child);
+                // Recursive call to get all childs.
+                foreach ($keysfound as $keyfound) {
+                    self::get_childs($keyfound, $parents);
+                    $keys[] = $keyfound;
+                }
+                return $keys;
+            }
+        }
+    }
 }

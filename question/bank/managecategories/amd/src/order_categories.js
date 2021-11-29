@@ -23,13 +23,13 @@
  *
  */
 
+import $ from 'jquery';
+import {get_string as getString} from 'core/str';
 import Ajax from 'core/ajax';
 import Fragment from 'core/fragment';
 import Notification from 'core/notification';
 import SortableList from 'core/sortable_list';
-import {get_string as getString} from 'core/str';
 import Templates from 'core/templates';
-import $ from 'jquery';
 
 new SortableList(
     '.category_list',
@@ -61,12 +61,14 @@ const setupSortableLists = (contextid) => {
         const newOrder = getNewOrder(categoryListElements, oldContextId, oldCat);
         // Call external function.
         const newCatOrder = JSON.stringify(newOrder[0]);
-        const destination = newOrder[1].split(',');
+        let destinationContext = oldContextId;
+        if (newOrder[1] !== undefined) {
+            const destination = newOrder[1].split(',');
+            destinationContext = destination[1];
+        }
         const origin = newOrder[2].split(',');
-        const destinationContext = destination[1];
         const originContext = origin[1];
         const originCategory = origin[0];
-
         setCatOrder(newCatOrder, originCategory, destinationContext, originContext)
         .then(() => {
             return getCategoriesFragment(contextid).done((html, js) => {
@@ -74,20 +76,25 @@ const setupSortableLists = (contextid) => {
             });
         })
         .catch((error) => {
-            return getString(error.error, 'qbank_managecategories').then((str) => {
+            getString(error.error, 'qbank_managecategories')
+            .then((str) => {
                 return Notification.addNotification({
                     message: str,
                     type: 'error'
                 });
+            }).catch(() => {
+                return;
             });
-            //console.log(error);
-            //location.reload();
+            return getCategoriesFragment(contextid).done((html, js) => {
+                document.getElementsByClassName('alert-danger')[0].scrollIntoView();
+                Templates.replaceNodeContents('#categoriesrendered', html, js);
+            });
         });
     });
 };
 
 /**
- * Call external function update_category_order - inserts the updated column in the question_categories table.
+ * Call new_category_order fragment for rendering.
  *
  * @param {int} contextid String containing new ordered categories.
  * @returns {Promise}
@@ -165,7 +172,7 @@ const getNewOrder = (categoryListElements, oldContextId, oldCat) => {
         newCatOrder[i] = listOrder;
     }
     destinationCtx = destinationCtx[0];
-    destinationCtx = destinationCtx.filter((ctxId) => ctxId !== oldCtxCat);
+    destinationCtx = destinationCtx.filter((ctxId) => ctxId.split(',')[1] != oldContextId);
     return [newCatOrder, destinationCtx[0], oldCtxCat];
 };
 

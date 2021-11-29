@@ -25,11 +25,11 @@
  */
 
 import * as Str from 'core/str';
-import Notification from 'core/notification';
-import ModalFactory from 'core/modal_factory';
-import ModalEvents from 'core/modal_events';
-import Fragment from 'core/fragment';
 import Ajax from 'core/ajax';
+import Fragment from 'core/fragment';
+import ModalEvents from 'core/modal_events';
+import ModalFactory from 'core/modal_factory';
+import Notification from 'core/notification';
 
 /**
  * Function handling display of moodle form.

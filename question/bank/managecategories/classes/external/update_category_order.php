@@ -84,14 +84,27 @@ class update_category_order extends external_api {
 
         // Question_categories table modifications.
         if (!is_null($newctxid)) {
-            // Retrieves top category parent where neighbor category is located.
+            // Retrieves new and old context categories.
             $sql = 'SELECT id, contextid, parent, sortorder, idnumber
                         FROM {question_categories}
-                        WHERE (contextid = ?) OR (id = ?)';
+                        WHERE (contextid = ?) OR (contextid = ?)';
 
-            $records = $DB->get_records_sql($sql, [$newctxid, $origincategory]);
-            $destinationcontext = reset($records);
+            $records = $DB->get_records_sql($sql, [$newctxid, $origincontext]);
+            foreach ($records as $record) {
+                // Top category where to add newly moved one(s).
+                if (((int)$record->contextid === $newctxid) && ((int)$record->parent === 0)) {
+                    $topcategoryid = (int)$record->id;
+                }
+                // Top category of old context to unset in records - for descendant research below.
+                if (((int)$record->contextid === $origincontext) && ((int)$record->parent === 0)) {
+                    $topcategoryidtounset = (int)$record->id;
+                }
+            }
+            $destinationcontext = $records[$topcategoryid];
             $categorytoupdate = $records[$origincategory];
+            unset($records[$topcategoryid]);
+            unset($records[$topcategoryidtounset]);
+            $transaction = $DB->start_delegated_transaction();
             if (isset($categorytoupdate->idnumber)) {
                 // We don't want errors when reordering in same context.
                 if ($destinationcontext->contextid !== $categorytoupdate->contextid) {
@@ -104,6 +117,32 @@ class update_category_order extends external_api {
                     }
                 }
             }
+
+            $parents = [];
+            // Check if moved category has descendants - update those categories with new contextid.
+            foreach ($records as $child => $record) {
+                $parents[$child] = (int)$record->parent;
+            }
+            $descendants = helper::get_childs((int)$categorytoupdate->id, $parents);
+
+            foreach ($descendants as $descendantid) {
+                $records[$descendantid]->contextid = $newctxid;
+                // Checks if the descendant idnumber exists or not.
+                if (isset($records[$descendantid]->idnumber)) {
+                    // We don't want errors when reordering in same context.
+                    if ($destinationcontext->contextid !== $categorytoupdate->contextid) {
+                        $exists = helper::get_idnumber($records[$descendantid]->idnumber, $destinationcontext->contextid);
+                        if ($exists) {
+                            return [
+                                'success' => false,
+                                'error' => 'idnumberexists'
+                            ];
+                        }
+                    }
+                }
+                $DB->update_record('question_categories', $records[$descendantid]);
+            }
+
             $categorytoupdate->parent = $destinationcontext->id;
             $updatedcontextcat = $categorytoupdate->id . ',' . $categorytoupdate->contextid;
             $categorytoupdate->contextid = $newctxid;
@@ -119,6 +158,7 @@ class update_category_order extends external_api {
                 }
             }
 
+            // Sets new sortorder.
             foreach ($tosort as $ctxcat => $sortorder) {
                 $currentctx = clean_param(explode(',', $ctxcat)[1], PARAM_INT);
                 $currentid = clean_param(explode(',', $ctxcat)[0], PARAM_INT);
@@ -131,6 +171,7 @@ class update_category_order extends external_api {
                 }
             }
         }
+        $transaction->allow_commit();
         return [
             'success' => true,
             'error' => '',
