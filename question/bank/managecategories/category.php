@@ -126,17 +126,15 @@ $PAGE->set_heading($COURSE->fullname);
 
 // Print horizontal nav if needed.
 $renderer = $PAGE->get_renderer('core_question', 'bank');
-
+$categoriesrenderer = $PAGE->get_renderer('qbank_managecategories');
 echo $OUTPUT->header();
-
-$qbankaction = new \core_question\output\qbank_actionbar($url);
-echo $renderer->qbank_action_menu($qbankaction);
+echo $renderer->extra_horizontal_navigation();
 
 if ($questionstomove) {
     $qcobject->display_move_form($questionstomove, $category);
 } else {
     // Display the user interface.
-    echo $qcobject->display_user_interface();
+    echo $categoriesrenderer->render_qbank_categories($qcobject->categories_data());
 }
 
 echo $OUTPUT->footer();

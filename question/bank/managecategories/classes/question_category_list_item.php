@@ -81,8 +81,13 @@ class question_category_list_item extends list_item {
      * @param array $extraargs
      * @return string Item html.
      * @throws \moodle_exception
+     * @deprecated since Moodle 4.0 MDL-72397 - please do not use this function any more.
+     * @todo Final deprecation on Moodle 4.4 MDL-72438.
+     * @see qbank_managecategories\question_category_object::item_data()
      */
     public function item_html($extraargs = []) : string {
+        debugging('item_html() is deprecated.
+            Please use qbank_managecategories\question_category_object::item_data() instead.', DEBUG_DEVELOPER);
         global $PAGE, $OUTPUT;
         $str = $extraargs['str'];
         $category = $this->item;

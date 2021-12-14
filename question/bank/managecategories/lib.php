@@ -36,7 +36,7 @@ use qbank_managecategories\question_category_object;
  * @return null|string The rendered form.
  */
 function qbank_managecategories_output_fragment_category_rendering($args) {
-    global $OUTPUT;
+    global $OUTPUT, $PAGE;
     $url = new moodle_url($args['url']);
     $thiscontext = $args['context'];
     if ($args['cmid']) {
@@ -50,9 +50,11 @@ function qbank_managecategories_output_fragment_category_rendering($args) {
     $qcobject = new question_category_object(1, $url,
         $contexts->having_one_edit_tab_cap('categories'), 0,
         null, 0, $contexts->having_cap('moodle/question:add'));
+    $categoriesrenderer = $PAGE->get_renderer('qbank_managecategories');
+    $categoriesdata = $qcobject->categories_data()['categoriesrendered'];
     $data = [
-        'categoriesrendered' => $qcobject->output_edit_lists(),
+        'categoriesrendered' => $categoriesdata,
         'contextid' => $args['context']->id,
     ];
-    return $OUTPUT->render_from_template('qbank_managecategories/categoryrendering', $data);
+    return $categoriesrenderer->render_qbank_categories($data);
 }

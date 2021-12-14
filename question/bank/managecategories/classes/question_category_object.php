@@ -21,10 +21,14 @@ namespace qbank_managecategories;
  */
 define('QUESTION_PAGE_LENGTH', 25);
 
+use action_menu;
+use action_menu_link;
 use context;
 use context_system;
+use \core\plugininfo\qbank;
 use moodle_exception;
 use moodle_url;
+use pix_icon;
 use question_bank;
 use stdClass;
 use qbank_managecategories\form\question_category_edit_form;
@@ -162,11 +166,11 @@ class question_category_object {
     }
 
     /**
-     * Displays the user interface.
+     * Returns data for categories.
      *
      */
-    public function display_user_interface() {
-        global $OUTPUT, $PAGE;
+    public function categories_data(): array {
+        global $OUTPUT;
 
         $context = context_system::instance();
         $helpstringhead = $OUTPUT->heading_with_help(get_string('editcategories', 'question'), 'editcategories', 'question');
@@ -175,15 +179,183 @@ class question_category_object {
         } else {
             $hascapability = false;
         }
-        $dat = [
+
+        $categories = [];
+        foreach ($this->editlists as $context => $list) {
+            // Get list elements.
+            $context = context_system::instance();
+            $itemstab = [];
+            if (count($list->items)) {
+                $first = true;
+                $itemiter = 1;
+                $lastitem = '';
+                foreach ($list->items as $item) {
+                    $last = (count($list->items) == $itemiter);
+                    $params = $item->parentlist->pageurl->params();
+                    $itemstab['items'][] = $this->item_data($list, $item, $context, $params, $first, $last, $lastitem);
+                    $first = false;
+                    $lastitem = $item;
+                    $itemiter++;
+                }
+            }
+            if ($itemstab['items']) {
+                $ctxlvl = "contextlevel" . $list->context->contextlevel;
+                $heading = get_string('questioncatsfor', 'question', $list->context->get_context_name());
+            }
+            // Get categories context.
+            $categories[] = [
+                'ctxlvl' => $ctxlvl,
+                'heading' => $heading,
+                'items' => $itemstab['items']
+            ];
+        }
+        $data = [
             'helpstringhead' => $helpstringhead,
             'checkbox' => $this->checkboxform->render(),
-            'categoriesrendered' => $this->output_edit_lists(),
+            'categoriesrendered' => $categories,
             'hascapability' => $hascapability,
             'contextid' => $this->contextid,
         ];
+        return $data;
+    }
 
-        return $OUTPUT->render_from_template(helper::PLUGINNAME . '/basecategory', $dat);
+    /**
+     * Creates and returns each item data.
+     *
+     * @param moodle_list $list page number
+     * @param list_item $item page number
+     * @param context $context
+     * @param array $params page URL Parameter
+     * @param bool $first true if item is first in list
+     * @param bool $last true if item is last in list
+     * @param list_item|string $lastitem page number
+     * @return array $itemdata item data
+     */
+    public function item_data(\moodle_list $list, \list_item $item, context $context,
+        array $params, bool $first, bool $last, $lastitem): array {
+        global $OUTPUT, $PAGE;
+        if ($list->editable) {
+            if (has_capability('moodle/category:manage', $context)) {
+                $item->set_icon_html($first, $last, $lastitem);
+            }
+        }
+        $iconleft = isset($item->icons['left']) ? $item->icons['left'] : null;
+        $iconright = isset($item->icons['right']) ? $item->icons['right'] : null;
+        $str = $this->str;
+        $category = $item->item;
+        $cmid = $params['cmid'] ?? 0;
+        $courseid = $params['courseid'] ?? 0;
+
+        // Each section adds html to be displayed as part of this list item.
+        $questionbankurl = new moodle_url('/question/edit.php', $params);
+        $questionbankurl->param('cat', $category->id . ',' . $category->contextid);
+        $categoryname = format_string($category->name, true, ['context' => $item->parentlist->context]);
+        $idnumber = null;
+        if ($category->idnumber !== null && $category->idnumber !== '') {
+            $idnumber = $category->idnumber;
+        }
+        $questioncount = ' (' . $category->questioncount . ')';
+        $checked = get_user_preferences('qbank_managecategories_showdescr');
+        if ($checked) {
+            $categorydesc = format_text($category->info, $category->infoformat,
+                ['context' => $item->parentlist->context, 'noclean' => true]);
+        } else {
+            $categorydesc = '';
+        }
+        $menu = new action_menu();
+        $menu->set_menu_trigger(get_string('edit'));
+        if ($item->children->editable) {
+            // Sets up edit link.
+            if (has_capability('moodle/category:manage', $context)) {
+                $thiscontext = (int)$item->item->contextid;
+                $editurl = new moodle_url('#');
+                $selector = '[data-action=editcategory-'. $category->id .']';
+                $PAGE->requires->js_call_amd('qbank_managecategories/addcategory_dialogue', 'initModal',
+                        [$selector, $thiscontext, $category->id, $cmid, $courseid]);
+                $menu->add(new action_menu_link(
+                    $editurl,
+                    new pix_icon('t/edit', 'edit'),
+                    get_string('editsettings'),
+                    false,
+                    ['data-action' => "editcategory-{$category->id}"]
+                ));
+                // Don't allow delete if this is the top category, or the last editable category in this context.
+                if (!helper::question_is_only_child_of_top_category_in_context($category->id)) {
+                    // Sets up delete link.
+                    $deleteurl = new moodle_url('/question/bank/managecategories/category.php',
+                        ['delete' => $category->id, 'sesskey' => sesskey()]);
+                    if ($courseid !== 0) {
+                        $deleteurl->param('courseid', $courseid);
+                    } else {
+                        $deleteurl->param('cmid', $cmid);
+                    }
+                    $menu->add(new action_menu_link(
+                        $deleteurl,
+                        new pix_icon('t/delete', 'delete'),
+                        get_string('delete'),
+                        false
+                    ));
+                }
+            }
+        }
+
+        // Sets up export to XML link.
+        if (qbank::is_plugin_enabled('qbank_exportquestions')) {
+            $exporturl = new moodle_url('/question/bank/exportquestions/export.php',
+            ['cat' => $category->id . ',' . $category->contextid]);
+            if ($courseid !== 0) {
+                $exporturl->param('courseid', $courseid);
+            } else {
+                $exporturl->param('cmid', $cmid);
+            }
+
+            $menu->add(new action_menu_link(
+                $exporturl,
+                new pix_icon('t/download', 'download'),
+                get_string('exportasxml', 'question'),
+                false
+            ));
+        }
+
+        // Menu to string/html.
+        $menu = $OUTPUT->render($menu);
+        // Don't allow movement if only subcat.
+        $handle = false;
+        if (has_capability('moodle/category:manage', $context)) {
+            if (!helper::question_is_only_child_of_top_category_in_context($category->id)) {
+                $handle = true;
+            } else {
+                $handle = false;
+            }
+        }
+
+        $children = [];
+        if (!empty($item->children->items)) {
+            $first = true;
+            $i = 1;
+            $lastitem = '';
+            foreach ($item->children->items as $itm) {
+                $last = (count($item->children->items) == $i);
+                $children[] = $this->item_data($list, $itm, $context, $params, $first, $last, $lastitem);
+                $first = false;
+                $lastitem = $item;
+                $i++;
+            }
+        }
+        $itemdata =
+        [
+            'questionbankurl' => $questionbankurl,
+            'categoryname' => $categoryname,
+            'idnumber' => $idnumber,
+            'questioncount' => $questioncount,
+            'categorydesc' => $categorydesc,
+            'editactionmenu' => $menu,
+            'handle' => $handle,
+            'iconleft' => $iconleft,
+            'iconright' => $iconright,
+            'children' => $children
+        ];
+        return $itemdata;
     }
 
     /**
@@ -191,36 +363,6 @@ class question_category_object {
      */
     public function output_new_table(): void {
         $this->catform->display();
-    }
-
-    /**
-     * Outputs a list to allow editing/rearranging of existing categories.
-     *
-     * $this->initialize() must have already been called
-     *
-     */
-    public function output_edit_lists(): array {
-        global $OUTPUT;
-        $categoriesrendered = [];
-        foreach ($this->editlists as $context => $list) {
-            $listhtml = $list->to_html(0, ['str' => $this->str]);
-            if ($listhtml) {
-                $ctxlvl = "contextlevel" . $list->context->contextlevel;
-                $fullcontext = context::instance_by_id($context);
-                $heading = get_string('questioncatsfor', 'question', $fullcontext->get_context_name());
-                $listdisplay = $listhtml;
-            }
-            $data =
-            [
-                'ctxlvl' => $ctxlvl,
-                'heading' => $heading,
-                'list' => $listdisplay,
-            ];
-            $rendered = $OUTPUT->render_from_template(helper::PLUGINNAME . '/categoryobject', $data);
-            $categoriesrendered[] = ['category' => $rendered];
-        }
-        $categoriesrendered[] = $list->display_page_numbers();
-        return $categoriesrendered;
     }
 
     /**

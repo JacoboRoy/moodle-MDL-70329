@@ -23,7 +23,9 @@ Feature: A teacher can put questions with idnumbers in categories with idnumbers
       | contextlevel | reference | questioncategory | name           | idnumber |
       | Course       | C1        | Top              | top            |          |
       | Course       | C1        | top              | Used category  | c1used   |
-    And I navigate to "Question bank > Categories" in current page administration
+    And I navigate to "Question bank" in current page administration
+    And I click on "jump" "select"
+    And I click on "Categories" "option"
     And I press "Add category"
     And I set the following fields to these values:
       | Name            | New cat |
@@ -48,7 +50,9 @@ Feature: A teacher can put questions with idnumbers in categories with idnumbers
       | contextlevel | reference | questioncategory | name           | idnumber |
       | Course       | C1        | Top              | top            |          |
       | Course       | C1        | top              | Used category  | c1used   |
-    And I navigate to "Question bank > Categories" in current page administration
+    And I navigate to "Question bank" in current page administration
+    And I click on "jump" "select"
+    And I click on "Categories" "option"
     And I press "Edit"
     And I choose "Edit settings" in the open action menu
     And I click on "//button[@data-action='save']" "xpath_element"

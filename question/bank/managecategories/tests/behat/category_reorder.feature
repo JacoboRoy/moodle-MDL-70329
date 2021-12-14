@@ -47,8 +47,8 @@ Feature: A Teacher can reorder question categories
   Scenario: Teacher can reorder categories
     When I drag "Quiz category" and I drop it in "Default for Category 1" in the question category list
     Then "Quiz category" "text" should appear before "Default for Category 1" "text"
-    And I drag "Course category 2" and I drop it in "Quiz category" in the question category list
-    Then "Course category 2" "text" should appear before "Quiz category 2" "text"
+    And I drag "Course category" and I drop it in "System category" in the question category list
+    Then "Course category" "text" should appear before "System category" "text"
 
   @javascript
   Scenario: Teacher can display and hide category descriptions

@@ -146,8 +146,13 @@ class question_category_list extends moodle_list {
      *
      * @param integer $indent depth of indentation.
      * @param array $extraargs extra argument.
+     * @deprecated since Moodle 4.0 MDL-72397 - please do not use this function any more.
+     * @todo Final deprecation on Moodle 4.4 MDL-72438.
+     * @see qbank_managecategories\question_category_object::item_data()
      */
     public function to_html($indent=0, $extraargs=[]) {
+        debugging('to_html() is deprecated.
+            Please use qbank_managecategories\question_category_object::item_data() instead.', DEBUG_DEVELOPER);
         global $OUTPUT;
         $context = context_system::instance();
         $itemstab = [];

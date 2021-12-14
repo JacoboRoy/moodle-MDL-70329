@@ -25,9 +25,11 @@ Feature: A teacher can put questions in categories in the question bank
       | Used category    | essay | Test question to be moved | Write about whatever you want |
     And I log in as "admin"
     And I am on "Course 1" course homepage
+    And I navigate to "Question bank" in current page administration
+    And I click on "jump" "select"
+    And I click on "Categories" "option"
 
   Scenario: A new question category can be created
-    When I navigate to "Question bank > Categories" in current page administration
     And I press "Add category"
     And I set the following fields to these values:
       | Name            | New Category 1    |
@@ -44,50 +46,24 @@ Feature: A teacher can put questions in categories in the question bank
     And "New Category 1" "list_item" should exist in the ".contextlevel50" "css_element"
 
   Scenario: A question category can be edited
-<<<<<<< HEAD
-    When I navigate to "Question bank" in current page administration
-    And I select "Categories" from the "questionbankactionselect" singleselect
-    And I click on "Edit this category" "link" in the "Subcategory" "list_item"
-    And the field "parent" matches value "&nbsp;&nbsp;&nbsp;Default for C1"
-    And I set the following fields to these values:
-      | Name            | New name     |
-      | Category info   | I was edited |
-    And I press "Save changes"
-=======
-    When I navigate to "Question bank > Categories" in current page administration
     And I press "Edit"
     And I choose "Edit settings" in the open action menu
     And I set the field "Name" to "New name"
     And I set the field "Category info" to "I was edited"
     And I click on "//button[@data-action='save']" "xpath_element"
     And I click on "Show descriptions" "checkbox"
->>>>>>> MDL-72397 qbank_managecategories: UI enhancement
     Then I should see "New name"
     And I should see "I was edited"
 
   Scenario: An empty question category can be deleted
-<<<<<<< HEAD
-    When I navigate to "Question bank" in current page administration
-    And I select "Categories" from the "questionbankactionselect" singleselect
-    And I click on "Delete" "link" in the "Subcategory" "list_item"
-    Then I should not see "Subcategory"
-
-  Scenario: An non-empty question category can be deleted if you move the contents elsewhere
-    When I navigate to "Question bank" in current page administration
-    And I select "Categories" from the "questionbankactionselect" singleselect
-    And I click on "Delete" "link" in the "Used category" "list_item"
-=======
-    When I navigate to "Question bank > Categories" in current page administration
     Then I should see "Default for C1"
     And I press "Edit"
     And I choose "Delete" in the open action menu
     Then I should not see "Default for C1"
 
   Scenario: An non-empty question category can be deleted if you move the contents elsewhere
-    When I navigate to "Question bank > Categories" in current page administration
     And I click on "//a[contains(text(),'Used category')]/../../div/div[@class='float-left']//a[@class=' dropdown-toggle icon-no-margin']" "xpath_element"
     And I choose "Delete" in the open action menu
->>>>>>> MDL-72397 qbank_managecategories: UI enhancement
     And I should see "The category 'Used category' contains 1 questions"
     And I press "Save in category"
     Then I should not see "Used category"
