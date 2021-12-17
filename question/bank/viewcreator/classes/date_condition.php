@@ -16,6 +16,7 @@
 
 namespace qbank_viewcreator;
 
+use calendar_information;
 use core_question\local\bank\condition;
 
 /**
@@ -27,30 +28,24 @@ use core_question\local\bank\condition;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class date_condition extends condition {
-    /** @var \stdClass The course record. */
-    protected $course;
+    /** @var int The default filter type (BETWEEN) */
+    const JOINTYPE_DEFAULT = 2;
 
-    /** @var array of contexts. */
-    protected $contexts;
+    /** @var int Before of the following match */
+    const JOINTYPE_BEFORE = 0;
 
-    /** @var bool Whether to include questions from sub-categories. */
-    protected $recurse;
+    /** @var int After of the following match */
+    const JOINTYPE_AFTER = 1;
 
-    /** @var string SQL fragment to add to the where clause. */
-    protected $where;
-
-    /** @var array query param used in where. */
-    protected $params;
+    /** @var int Between of the following match */
+    const JOINTYPE_BETWEEN = 2;
 
     /**
-     * Constructor to initialize the category filter condition.
+     * Constructor to initialize the date filter condition.
      */
     public function __construct($qbank) {
-        $this->cat = $qbank->get_pagevars('cat');
-        $this->recurse = $qbank->get_pagevars('recurse');
-        $this->contexts = $qbank->contexts->having_one_edit_tab_cap($qbank->get_pagevars('tabname'));
-        $this->course = $qbank->course;
-        $this->filters = $qbank->get_pagevars('filters');
+        global $DB;
+        $filters = $qbank->get_pagevars('filters');
     }
 
     public function where() {
@@ -95,7 +90,28 @@ class date_condition extends condition {
      * @return array
      */
     public function get_filter_options(): array {
-        return [];
+        global $PAGE;
+        // This must be displayed instead of type or select
+        // $renderer = $PAGE->get_renderer('core_calendar');
+        // $calendar = calendar_information::create(time(), SITEID, null);
+        // list($data, $template) = calendar_get_view($calendar, 'minithree', false, true);
+        // $calendarhtml = $renderer->render_from_template($template, $data);
+        // TODO: Replace strings in lang files.
+        $values[] = [
+            'value' => 123,
+            'title' => 'Test',
+            'selected' => 'Test'
+        ];
+        $filteroptions = [
+            'name' => 'date',
+            'title' => 'Date',
+            'custom' => false,
+            'multiple' => true,
+            'filterclass' => null,
+            'values' => $values,
+            'allowempty' => false,
+        ];
+        return $filteroptions;
     }
 
     /**
@@ -105,9 +121,9 @@ class date_condition extends condition {
      */
     public function get_join_list(): array {
         return [
-            self::JOINTYPE_NONE => get_string('none'),
-            self::JOINTYPE_ANY => get_string('any'),
-            self::JOINTYPE_ALL => get_string('all'),
+            self::JOINTYPE_BETWEEN => 'Between',
+            self::JOINTYPE_BEFORE => 'Before',
+            self::JOINTYPE_AFTER => 'After',
         ];
     }
 }

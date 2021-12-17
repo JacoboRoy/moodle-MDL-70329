@@ -25,3 +25,7 @@
 
 $string['pluginname'] = 'View creator';
 $string['privacy:metadata'] = 'The View creator question bank plugin does not store any personal data.';
+// Used for date selection in menu.
+$string['after'] = 'After';
+$string['before'] = 'Before';
+$string['between'] = 'Between';
