@@ -50,8 +50,9 @@ class date_condition extends condition {
         $renderer = $PAGE->get_renderer('core_calendar');
         $calendar = calendar_information::create(time(), SITEID, null);
         list($data, $template) = calendar_get_view($calendar, 'minithree');
-        $calendarhtml = $renderer->render_from_template($template, $data);
-        $PAGE->requires->js_call_amd('qbank_viewcreator/date','init');
+        //$calendarhtml = $renderer->render_from_template($template, $data);
+        $PAGE->requires->js_call_amd('qbank_viewcreator/date','init',
+            [$data->date->year, $data->date->mon, $data->courseid, $data->categoryid, true, true]);
     }
 
     public function where() {

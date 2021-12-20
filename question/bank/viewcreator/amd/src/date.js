@@ -22,6 +22,7 @@
  */
 
 import Templates from 'core/templates';
+import {getCalendarMonthData as getCalendarData} from 'core_calendar/repository';
 
 const addEventList = () => {
     const typeSelector = document.querySelector('[data-table-region=qbank-table]');
@@ -39,6 +40,14 @@ const addEventList = () => {
     });
 };
 
-export const init = () => {
+export const init = (year, month, courseId, categoryId, includeNavigation, mini) => {
+    getCalendarData(year, month, courseId, categoryId, includeNavigation, mini)
+    .then((data) => {
+        console.log(data);
+        return;
+    }).catch(() => {
+        return;
+    });
+
     addEventList();
 };
