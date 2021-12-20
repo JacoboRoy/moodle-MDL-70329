@@ -21,8 +21,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+import ModalForm from 'core_form/modalform';
 import Templates from 'core/templates';
-import {getCalendarMonthData as getCalendarData} from 'core_calendar/repository';
+//import {getCalendarMonthData as getCalendarData} from 'core_calendar/repository';
 
 const addEventList = () => {
     const typeSelector = document.querySelector('[data-table-region=qbank-table]');
@@ -32,6 +33,18 @@ const addEventList = () => {
             .then(({html}) => {
                 e.target.parentNode.querySelector('[data-filterfield=join]').options.length = 0;
                 Templates.appendNodeContents('[data-filterfield=join]', html, '');
+                datePickerSetup();
+                // Get calendar data for calendar renderer.
+                // getCalendarData(year, month, courseId, categoryId, includeNavigation, mini)
+                // .then((context) => {
+                //     Templates.render('qbank_viewcreator/calendar', context)
+                //     .done((html) => {
+                //         Templates.replaceNodeContents('[data-filterregion=value]', html, '');
+                //     });
+                //     return;
+                // }).catch(() => {
+                //     return;
+                // });
                 return;
             }).catch(() => {
                 return;
@@ -40,14 +53,36 @@ const addEventList = () => {
     });
 };
 
-export const init = (year, month, courseId, categoryId, includeNavigation, mini) => {
-    getCalendarData(year, month, courseId, categoryId, includeNavigation, mini)
-    .then((data) => {
-        console.log(data);
-        return;
-    }).catch(() => {
-        return;
+const datePickerSetup = () => {
+    const typeorselec = document.querySelectorAll('[data-filterregion=value]')[0];
+    const jointype = document.querySelector('[data-filterfield=join]');
+    typeorselec.addEventListener('click', e => {
+        e.preventDefault();
+        console.log('JOINTYPe: ', jointype);
+        const element = e.target;
+        const modalForm = new ModalForm({
+            // Name of the class where form is defined (must extend \core_form\dynamic_form):
+            formClass: 'qbank_viewcreator\\form\\datepicker_form',
+            // Add as many arguments as you need, they will be passed to the form:
+            args: {
+                url: location.href,
+                jointype: jointype
+            },
+            // Pass any configuration settings to the modal dialogue, for example, the title:
+            modalConfig: {
+                title: 'simple'
+            },
+            // DOM element that should get the focus after the modal dialogue is closed:
+            returnFocus: element,
+        });
+        // Listen to events if you want to execute something on form submit.
+        // Event detail will contain everything the process() function returned:
+        modalForm.addEventListener(modalForm.events.FORM_SUBMITTED, (e) => window.console.log(e.detail));
+        // Show the form.
+        modalForm.show();
     });
+};
 
+export const init = () => {
     addEventList();
 };

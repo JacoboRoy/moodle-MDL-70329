@@ -47,12 +47,11 @@ class date_condition extends condition {
     public function __construct($qbank) {
         global $PAGE;
         // This must be displayed instead of type or select
-        $renderer = $PAGE->get_renderer('core_calendar');
-        $calendar = calendar_information::create(time(), SITEID, null);
-        list($data, $template) = calendar_get_view($calendar, 'minithree');
-        //$calendarhtml = $renderer->render_from_template($template, $data);
-        $PAGE->requires->js_call_amd('qbank_viewcreator/date','init',
-            [$data->date->year, $data->date->mon, $data->courseid, $data->categoryid, true, true]);
+        // $renderer = $PAGE->get_renderer('core_calendar');
+        // $calendar = calendar_information::create(time(), SITEID, null);
+        // list($data, $template) = calendar_get_view($calendar, 'minithree');
+        $PAGE->requires->js_call_amd('qbank_viewcreator/date','init');
+        // [$data->date->year, $data->date->mon, $data->courseid, $data->categoryid, true, true, $template]);
     }
 
     public function where() {
