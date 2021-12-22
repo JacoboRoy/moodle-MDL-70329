@@ -95,7 +95,28 @@ class date_condition extends condition {
      * @return array
      */
     public function get_filter_options(): array {
-        return [];
+        // global $PAGE;
+        // This must be displayed instead of type or select
+        // $renderer = $PAGE->get_renderer('core_calendar');
+        // $calendar = calendar_information::create(time(), SITEID, null);
+        // list($data, $template) = calendar_get_view($calendar, 'minithree', false, true);
+        // $calendarhtml = $renderer->render_from_template($template, $data);
+        // TODO: Replace strings in lang files.
+        $values[] = [
+            'value' => 123,
+            'title' => 'Test',
+            'selected' => 'Test'
+        ];
+        $filteroptions = [
+            'name' => 'date',
+            'title' => 'Date',
+            'custom' => false,
+            'multiple' => true,
+            'filterclass' => null,
+            'values' => $values,
+            'allowempty' => false,
+        ];
+        return $filteroptions;
     }
 
     /**
